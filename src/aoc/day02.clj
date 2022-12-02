@@ -18,15 +18,23 @@
        :else 0)
      (shape-score me)))
 
+(defn get-turn [[elf outcome]]
+  [elf
+   ((case outcome
+     \X {\A \Z \B \X \C \Y}
+     \Y {\A \X \B \Y \C \Z}
+     \Z {\A \Y \B \Z \C \X})
+    elf)])
 
-
-(defn solve1 [v]
+(defn solve [part v]
   (->> v
+       ((if (= part 1) identity #(map get-turn %)))
        (map score)
        (reduce +)))
 
 
 (defn -main []
   (let [input (parse-input "resources/input02.txt")]
-    (println (solve1 input))))
+    (println (solve 1 input))
+    (println (solve 2 input))))
 
