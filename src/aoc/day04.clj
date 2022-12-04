@@ -1,6 +1,5 @@
 (ns aoc.day04
-  (:require [clojure.string :as str]
-            [clojure.set :as set]))
+  (:require [clojure.string :as str]))
 
 (defn parse-line [^String s]
   (->> (str/split s #"\D")
@@ -21,12 +20,16 @@
   (or (contains-range? a b)
       (contains-range? b a)))
 
-(defn solve [v]
+(defn either-overlap? [[a1 a2] [b1 b2]]
+  (and (<= b1 a2) (>= b2 a1)))
+
+(defn solve [filter-fun v]
   (->> v
-       (filter #(apply either-fully-contains? %))
+       (filter #(apply filter-fun %))
        count))
 
 (defn -main []
   (let [input (parse-input "resources/input04.txt")]
-    (println (solve input))))
+    (doall (map #(println (solve % input))
+                [either-fully-contains? either-overlap?]))))
 
