@@ -30,25 +30,27 @@
         top-stack (subvec stack n)]
     [bottom-stack top-stack]))
 
-(defn move [stacks [num from to]]
+(defn move [stacks [num from to] transform-fn]
   (let [[new-stack moved-crates] (split-stack (stacks from) num)]
     (-> stacks
         (assoc from new-stack)
-        (update to #(reduce conj % (reverse moved-crates))))))
+        (update to #(reduce conj % (transform-fn moved-crates))))))
 
-(defn perform-actions [stacks actions]
+(defn perform-actions [stacks actions transform-fn]
   (if (empty? actions)
     stacks
-    (recur (move stacks (first actions))
-           (rest actions))))
+    (recur (move stacks (first actions) transform-fn)
+           (rest actions)
+           transform-fn)))
 
-(defn solve [[stacks actions]]
-  (let [result (perform-actions stacks actions)]
+(defn solve [[stacks actions] transform-fn]
+  (let [result (perform-actions stacks actions transform-fn)]
     (->> result
          (map last)
          (str/join))))
 
 (defn -main []
   (let [input (parse-input "resources/input05.txt")]
-    (println (solve input))))
+    (println (solve input reverse))
+    (println (solve input identity))))
 
