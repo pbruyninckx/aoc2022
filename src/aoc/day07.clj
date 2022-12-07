@@ -1,7 +1,6 @@
 (ns aoc.day07
   (:require [clojure.string :as str]
-            [clojure.walk :refer [postwalk]]
-            [clojure.pprint :refer [pprint]]))
+            [clojure.walk :refer [postwalk]]))
 
 (defn parse-input [f]
   (->> f
@@ -64,24 +63,40 @@
                 (reduce + size (map :tree-size (vals (:dirs node)))))
     node))
 
-(def MAX-SIZE 100000)
-
-(defn part1-walk [node]
+(defn flatten-sizes [node]
   (if-let [size (:tree-size node)]
-    (+ (if (<= size MAX-SIZE) size 0)
-       (reduce + (vals (:dirs node))))
+    (conj (flatten (vals (:dirs node))) size)
     node))
 
-(defn solve [input]
+
+(defn get-sizes [input]
   (->> (reduce process-line
           {:tree {}
            :location []}
           input)
        (postwalk add-own-size)
        (postwalk add-size)
-       (postwalk part1-walk)
+       (postwalk flatten-sizes)
        :tree))
 
+(def MAX-SIZE 100000)
+(defn solve1 [sizes]
+  (->> sizes
+       (filter #(< % MAX-SIZE))
+       (reduce +)))
+
+(def TO-FREE 30000000)
+(def DISK-SIZE 70000000)
+(defn solve2 [sizes]
+  (let [total-size (first sizes)
+        unused (- DISK-SIZE total-size)
+        needed (- TO-FREE unused)]
+    (->> sizes
+         (filter #(>= % needed))
+         (reduce min))))
+
 (defn -main []
-  (let [input (parse-input "resources/input07.txt")]
-    (println (solve input))))
+  (let [input (parse-input "resources/input07.txt")
+        sizes (get-sizes input)]
+    (println (solve1 sizes))
+    (println (solve2 sizes))))
