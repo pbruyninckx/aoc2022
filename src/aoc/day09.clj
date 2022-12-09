@@ -27,13 +27,6 @@
      tail)))
 
 
-(defn move-step [[visited head tail] direction]
-  (let [head ((moves direction) head)
-        tail (follow head tail)]
-    [(conj visited tail)
-     head
-     tail]))
-
 (defn move-rope [[visited rope] direction]
   (let [rope
         (reduce (fn [moved-rope tail] (conj moved-rope (follow (peek moved-rope) tail)))
@@ -42,27 +35,16 @@
     [(conj visited (peek rope)) rope]))
 
 
-
-(defn solve [instructions]
-  (->> instructions
-    (reduce (fn [[visited head tail :as acc] [direction num-steps]]
-              (nth (iterate #(move-step % direction) acc) num-steps))
-            [#{[0 0]} [0 0] [0 0]])
-    first  ; visited
-    count))
-
-(defn solve2 [instructions]
+(defn solve [rope-length instructions]
   (->> instructions
     (reduce (fn [[visited rope :as acc] [direction num-steps]]
               (nth (iterate #(move-rope % direction) acc) num-steps))
-            [#{[0 0]} (into [] (repeat 10 [0 0]))])
+            [#{[0 0]} (into [] (repeat rope-length [0 0]))])
     first  ; visited
     count))
-
 
 
 (defn -main []
   (let [input (parse-input "resources/input09.txt")]
-    (println (solve input))
-    (println (solve2 input))))
+    (doall (map #(println (solve % input)) [2 10]))))
 
