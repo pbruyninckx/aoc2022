@@ -12,8 +12,7 @@
     (fn [x]
       (letfn [(substitute-old [arg]
                 (if (= "old" arg) x (Integer/parseInt arg)))]
-        (quot (apply (resolve (symbol op)) (map substitute-old [a b]))
-              3))))) ; division by 3 is included here
+        (apply (resolve (symbol op)) (map substitute-old [a b]))))))
 
 (defn parse-destination [destination-lines]
   (let [[divisor dest-true dest-false]
@@ -22,25 +21,25 @@
              (map #(Integer/parseInt %)))]
     (fn [x] (if (= 0 (rem x divisor)) dest-true dest-false))))
 
-(defn parse-monkey [[_ items op & destination]]
+(defn parse-monkey [modulo-factor [_ items op & destination]]
   "{:items       ; worry level of items (fifo queue)
     :operation   ; function the creates new worry-level
     :destination ; function that returns destination of item with worry-level }"
   {:items (queue (map #(Integer/parseInt %) (re-seq #"\d+" items)))
-   :operation (parse-operation op)
+   :operation (comp #(mod % modulo-factor) (parse-operation op))
    :destination (parse-destination destination)
    :inspections 0})
 
-
+(defn stress-reducer [monkey]
+  "Reduces the amount of stress after update by a third"
+  (update monkey :operation (partial comp #(quot % 3))))
 
 (defn process-monkey [monkeys monkey-id]
   (let [monkey (monkeys monkey-id)
         {:keys [operation destination]} monkey]
     (loop [monkeys monkeys]
-      ;(println (seq (get-in monkeys [monkey-id :items])))
       (if-let [item (peek (get-in monkeys [monkey-id :items]))]
         (let [new-item (operation item)]
-          ;(println item " as " new-item " from " monkey-id " to " (destination new-item))
           (recur
             (-> monkeys
                 (update-in [(destination new-item) :items]
@@ -57,24 +56,37 @@
 (defn process-round [monkeys]
   (reduce process-monkey monkeys (range (count monkeys))))
 
-(defn parse-input [file-name]
-  (->> file-name
-       slurp
-       str/split-lines
-       (partition-by empty?)
-       (take-nth 2)
-       (mapv parse-monkey)))
+(defn parse-modulo-factor [file-data]
+  (->> file-data
+       (re-seq #"by (\d+)")
+       (map (comp #(Integer/parseInt %) second))
+       (apply *)
+       (* 3)))
 
-(defn solve [monkeys]
-  (->> monkeys
-       (iterate process-round)
-       (map count-inspections)
-       (drop 20)
-       first
-       (sort >)
-       (take 2)
-       (apply *)))
+(defn parse-input [file-name]
+  (let [file-data (slurp file-name)
+        modulo-factor (parse-modulo-factor file-data)]
+    (->> file-data
+         str/split-lines
+         (partition-by empty?)
+         (take-nth 2)
+         (mapv (partial parse-monkey modulo-factor)))))
+
+(defn solve [part monkeys]
+  (let [[stress-reducer num-iterations]
+        (if (= part 1)
+          [stress-reducer 20]
+          [identity 10000])]
+    (->> monkeys
+         (mapv stress-reducer)
+         (iterate process-round)
+         (map count-inspections)
+         (drop num-iterations)
+         first
+         (sort >)
+         (take 2)
+         (apply *))))
 
 (defn -main []
   (let [monkeys (parse-input "resources/input11.txt")]
-    (println (solve monkeys))))
+    (dorun (map #(println (solve % monkeys)) [1 2]))))
