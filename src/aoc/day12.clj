@@ -21,25 +21,31 @@
           positions)))
 
 (defn get-neighbours [heights [x y :as pos]]
-  (let [max-h (inc (get-in heights pos))]
+  (let [min-h (dec (get-in heights pos))]
     (->> [[(dec x) y] [(inc x) y] [x (dec y)] [x (inc y)]]
          (filter #(if-let [new-h (get-in heights %)]
-                    (<= new-h max-h))))))
+                    (<= min-h new-h))))))
 
 
-(defn solve [{:keys [heights start end]}]
-  (letfn [(step [[seen current]]
+(defn solve [part {:keys [heights start end]}]
+  (letfn [(start-reached? [current]
+            (if (= part 1)
+              (current start)
+              (->> current
+                   (filter #(= (get-in heights %) (int \a)))
+                   not-empty)))
+          (step [[seen current]]
             (let [neighbours (->> current
                                   (map #(get-neighbours heights %))
                                   flatten-1
                                   (into #{}))]
               [(set/union neighbours seen) (set/difference neighbours seen)]))]
-    (->> (iterate step [#{start} #{start}])
+    (->> (iterate step [#{end} #{end}])
          (map-indexed vector)
-         (filter (fn [[_index [_seen current]]] (current end)))
+         (filter (fn [[_index [_seen current]]] (start-reached? current)))
          first
          first)))
 
 (defn -main []
   (let [input (parse-input "resources/input12.txt")]
-    (println (solve input))))
+    (doall (map #(println (solve % input)) [1 2]))))
