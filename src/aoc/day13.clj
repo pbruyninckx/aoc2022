@@ -32,8 +32,10 @@
           (recur lrest rrest)
           result)))))
 
+(defn flatten-1 [s]
+  (apply concat s))
 
-(defn solve [input]
+(defn solve1 [input]
   (->> input
        (map (partial apply recursive-compare))
        (map-indexed vector)
@@ -41,6 +43,18 @@
        (map (comp inc first))  ; keep index - start at 1
        (reduce +)))
 
+(defn solve2 [input]
+  (->> input
+       (flatten-1)
+       (cons [[2]])
+       (cons [[6]])
+       (sort recursive-compare)
+       (map-indexed vector)
+       (filter (fn [[_ packet]] (#{[[2]] [[6]]} packet)))
+       (map (comp inc first))
+       (apply *)))
+
 (defn -main []
   (let [input (parse-input "resources/input13.txt")]
-    (println (solve input))))
+    (doseq [solve-fn [solve1 solve2]]
+      (println (solve-fn input)))))
