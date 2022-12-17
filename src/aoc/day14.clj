@@ -85,15 +85,28 @@
 
 (def start-point [500 0])
 
-(defn solve [cave]
-  (->> cave
+(defn solve1 [input]
+  (->> (get-compact-input input)
        (iterate #(add-sand % start-point))
        (map-indexed vector)
        (filter (fn [[_i cave]] (keyword? cave)))
        ((comp dec first first))))
 
+(defn add-floor [input]
+  (let [floor-y (->> input flatten-1 (map second) (reduce max) (+ 2))]
+    (cons [[(- (start-point 0) floor-y 10) floor-y]
+           [(+ (start-point 0) floor-y 10) floor-y]] input)))
+
+(defn solve2 [input]
+  (->> (add-floor input)
+       get-compact-input
+       (iterate #(add-sand % start-point))
+       (map-indexed vector)
+       (filter (fn [[_i cave]] (= 0 (get-in cave [(start-point 0) 0 0]))))
+       ((comp first first))))
+
 
 (defn -main []
-  (let [input (parse-input "resources/input14.txt")
-        cave (get-compact-input input)]
-    (println (solve cave))))
+  (let [input (parse-input "resources/input14.txt")]
+    (doseq [solve [solve1 solve2]]
+      (println (solve input)))))
