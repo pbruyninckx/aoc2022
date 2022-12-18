@@ -50,7 +50,35 @@
                             count)]
     (- beacon-free-positions actual-beacons)))
 
+(defn clip-range [[a b] [low high]]
+  "Maps a range so it fits within [low high], or returns nil if it falls outside"
+  (if (or (< b low) (> a high))
+    nil
+    [(max a low) (min b high)]))
+
+(defn solve2 [sensor-info max-coord]
+  (let [rows-ranges (map (fn [r] (->> sensor-info
+                                      (map #(beacon-free % r))
+                                      (filter identity)
+                                      (map #(clip-range % [0 max-coord]))
+                                      (filter identity)))
+                         (range (inc max-coord)))
+        [row-index row-ranges] (->> rows-ranges
+                                    (map-indexed vector)
+                                    (filter #(= (positions-covered (second %)) max-coord))
+                                    first)
+        starts (into #{} (sort (map first row-ranges)))
+        ends (into #{} (sort (map second row-ranges)))
+        col-index (->> ends
+                       (map inc)
+                       (filter (fn [e] (starts (inc e))))
+                       first)]
+    (+ (* 4000000 col-index) row-index)))
+
+
 (defn -main []
   (let [sensor-info (parse-input "resources/input15.txt")
-        target-row 2000000]
-    (println (solve sensor-info target-row))))
+        target-row 2000000
+        max-coord 4000000]
+    (println (solve sensor-info target-row))
+    (println (solve2 sensor-info max-coord))))
