@@ -1,6 +1,7 @@
 (ns aoc.day16
   (:require [clojure.string :as str]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [clojure.set :as set]))
 
 (defn parse-line [line]
   (let [[valve flow & tunnels] (re-seq #"[A-Z]{2}|\d+" line)]
@@ -40,21 +41,37 @@
         next-seen (reduce conj seen (map strip-flow next-states))]
     [next-seen next-states]))
 
+(def start-state
+  {:flow     0
+   :released 0
+   :location "AA"
+   :open     #{}})
 
+(defn solve1 [pipes]
+  (->> (iterate (partial iterate-states pipes) [#{} [start-state]])
+       (drop 30)
+       (map second)
+       first
+       (map :released)
+       (reduce max)))
 
-(defn solve [pipes]
-  (let [start-state {:flow 0
-                     :released 0
-                     :location "AA"
-                     :open #{}}]
-    (->> (iterate (partial iterate-states pipes) [#{} [start-state]])
-         (drop 30)
-         (map second)
-         first
-         (map :released)
-         (sort >)
-         first)))
+(defn best-distinct-combo [scores-by-opened]
+  (->> (for [[open1 score1] scores-by-opened
+             [open2 score2] scores-by-opened
+             :when (empty? (set/intersection open1 open2))]
+         (+ score1 score2))
+       (reduce max)))
+
+(defn solve2 [pipes]
+  (->> (iterate (partial iterate-states pipes) [#{} [start-state]])
+       (drop 26)
+       first
+       second  ; states only
+       (map (fn [{:keys [open released]}] {open released}))
+       (reduce (partial merge-with max))
+       best-distinct-combo))
 
 (defn -main []
   (let [input (parse-input "resources/input16.txt")]
-    (pp/pprint (solve input))))
+    (doseq [solve [solve1 solve2]]
+      (println (solve input)))))
