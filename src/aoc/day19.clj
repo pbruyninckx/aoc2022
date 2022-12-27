@@ -46,9 +46,8 @@
 
 (defn keep-best-states [states]
   (->> states
-       (sort-by #(vec (reverse (interleave (:robots %) (:ore %)))) (comp - compare))
-       (take 1000)
-       ))
+       (sort-by #(vec (reverse (interleave (:ore %) (:robots %)))) (comp - compare))
+       (take 200)))
 
 (defn next-minute [prices states]
   (->> states
@@ -56,21 +55,26 @@
        (reduce set/union)
        keep-best-states))
 
-(defn quality-level [blueprint]
+(defn max-geodes [num-iterations blueprint]
   (->> #{start-state}
        (iterate (partial next-minute (:prices blueprint)))
-       (drop 24)
+       (drop num-iterations)
        first
        (map #(get-in % [:ore 3]))
-       (reduce max)
-       (* (:id blueprint))
-       ))
+       (reduce max)))
 
-(defn solve [blueprints]
+(defn solve1 [blueprints]
   (->> blueprints
-       (map quality-level)
+       (map (fn [bp] (* (max-geodes 24 bp) (:id bp))))
        (reduce +)))
+
+(defn solve2 [blueprints]
+  (->> blueprints
+       (take 3)
+       (map (partial max-geodes 32))
+       (apply *)))
 
 (defn -main []
   (let [blueprints (parse-inputs "resources/input19.txt")]
-    (print (solve blueprints))))
+    (doseq [solve [solve1 solve2]]
+      (println (solve blueprints)))))
